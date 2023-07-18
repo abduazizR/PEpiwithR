@@ -1,0 +1,85 @@
+# Testing R performance versus SAS
+
+## Task 1
+What are the counts and proportions of males and females in outpatient claims (2017-2019) by year?
+
+```{r}
+tic()
+ccaeo |> 
+  filter(YEAR %in% 2017:2019) |> 
+  select(SEX, YEAR) |> 
+  group_by(YEAR) |> 
+  count(SEX) |> 
+  to_duckdb()
+toc()
+```
+
+## Task 2 
+
+Calculate summary statistics for the co-payments in pharmacy claims (2017-2019) for metformin-containing medications
+```{r}
+tic()
+ccaed |> 
+  select(ENROLID, NDCNUM, COPAY, YEAR) |> 
+  filter(YEAR %in% 2017:2019) |> 
+  filter(!is.na(ENROLID)) |> 
+  select(-ENROLID) |> 
+  filter(str_detect(NDCNUM, metformin_drugs_regex)) |> 
+  select(-NDCNUM) |> 
+  to_duckdb() |> 
+  collect() |> 
+  summarise(COPAY2 = mean(COPAY, na.rm = T), .by = YEAR)
+toc()
+```
+
+
+## Task 3
+How many pioglitazone dispensing claims with at least a 30-day supply in 2018 and 2019?
+```{r}
+tic()
+ccaed |> 
+  select(ENROLID, NDCNUM, YEAR, DAYSUPP) |> 
+  filter(YEAR %in% 2018:2019) |> 
+  filter(!is.na(ENROLID), DAYSUPP >= 30) |> 
+  select(-ENROLID) |> 
+  filter(str_detect(NDCNUM, pioglitazone_drugs_regex)) |> 
+  select(-NDCNUM) |> 
+  to_duckdb() |> 
+  group_by(YEAR) |> 
+  count()
+toc()
+```
+
+## Task 4
+Calculate the summary statistics of the number of hospital admissions per beneficiary (2017-2019).
+
+```{r}
+tic()
+ccaei |> 
+  select(ENROLID, ADMDATE, YEAR) |> 
+  filter(YEAR %in% 2017:2019) |> 
+  filter(!is.na(ENROLID)) |> 
+  distinct() |> 
+  count(ENROLID, sort = T) |> 
+  collect()
+toc()
+```
+
+
+
+## Task 5
+Calculate the counts and proportions of type 2 diabetes patients by region (2017-2019)
+
+```{r}
+tic()
+ccaeo |> 
+  filter(!is.na(ENROLID), YEAR %in% 2017:2019) |> 
+  select(ENROLID, contains("DX"), REGION) |> 
+  to_duckdb() |> 
+  filter(
+    (if_any(contains("DX"), ~str_detect(.x, {{type2_diabetes_regex}})))
+  ) |> 
+  distinct(ENROLID, REGION) |> 
+  count(REGION)
+toc()
+```

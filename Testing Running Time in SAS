@@ -161,9 +161,16 @@ proc freq data=task4 noprint;
   tables ENROLID / out=summary_count_enrolid;
 run; /*6.04 seconds (real); 2.20 (cpu) 2761452 observations*/
 
-proc print data = summary_count_enrolid (obs = 10); 
+/* Sort the summary_count_enrolid dataset by descending count */
+proc sort data=summary_count_enrolid out=summary_count_enrolid_sorted;
+  by descending COUNT;
 run;
 
+/* Export the summary_count_enrolid dataset to a CSV file */
+proc export data=summary_count_enrolid_sorted
+    outfile="C:\Users\kahanso2\Documents\SAS to R\task4.csv"
+    dbms=csv replace;
+run;
 
 /******************************************************/
 
@@ -208,4 +215,3 @@ run; /*16.26 seconds (real); 25.40 seconds (cpu)*/
 proc freq data = unique_matched_obs; 
 	table region; 
 	run; /*0.67 seconds (real); 0.37 seconds (cpu)*/
-

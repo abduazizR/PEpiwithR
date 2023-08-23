@@ -5,6 +5,7 @@ libname libref3 '\\pharm-psop\Truven Data\CCAE\2019';
 libname libref4 '\\pharm-psop\Truven Data';
 libname	libref5 'C:\Users\kahanso2\Documents\Truven';
 
+/*Task 1: What are the counts and proportions of males and females in outpatient claims (2017-2019) by year?*/
 /*Task 1a*/
 data task1; 
 	set libref1.ccaeo171
@@ -143,8 +144,12 @@ proc sql;
 quit; /*0.18 seconds (real); 0.21 seconds (cpu)*/
 
 proc print data = summary_count_per_year; run;
+
+
 /****************************************/
-/*Task 4*/
+
+
+/*Task 4: Calculate the summary statistics of the number of hospital admissions per beneficiary (2017-2019).*/
 data task4; 
 	set libref1.ccaei171
 		libref2.ccaei181
@@ -162,7 +167,7 @@ run;
 
 /******************************************************/
 
-/*Task 5 - works; matches output*/
+/*Task 5: Calculate the counts and proportions of type 2 diabetes patients by region (2017-2019) - works; matches output*/
 /*Load Outpatient Datasets*/
 data task5; 
 	set libref1.ccaeo171
@@ -203,3 +208,4 @@ run; /*16.26 seconds (real); 25.40 seconds (cpu)*/
 proc freq data = unique_matched_obs; 
 	table region; 
 	run; /*0.67 seconds (real); 0.37 seconds (cpu)*/
+

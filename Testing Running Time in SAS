@@ -12,30 +12,30 @@ data task1;
 		libref2.ccaeo181
 		libref3.ccaeo195_a;
 	keep SEX YEAR;
-run; 
+run; /*2:15:45.82 (real); 38:27.68 (cpu)*/
 
 proc freq data = task1; 
 	table SEX;
 	by YEAR;  
-	run;
+	run; /*1:10.76 (real); 1:10.89 (cpu)*/
 
 /*Task 1b*/
 proc freq data = libref1.ccaeo171; 
 	table SEX; 
-	run;
+	run; /*29:36.27 (real); 1:00.03 (cpu)*/
 
 proc freq data = libref2.ccaeo181; 
 	table SEX; 
-	run;
+	run; /*30:56.37 (real); 1:02.37 (cpu)*/
 
 proc freq data = libref3.ccaeo195_a; 
 	table SEX; 
-	run;
+	run; /*18:08.41 (real); 34.90 seconds (cpu)*/
 
 
 /***********************************/
 
-/*Task 2 - Calculate the mean co-payments amount in pharmacy claims (2017-2019) for metformin-containing medications */
+/*Task 2 - Calculate the mean co-payments amount in pharmacy claims (2017-2019) for metformin-containing medications - Works */
 /* Merge the drug data files (2017-2019) and keep relevant variables for analysis */
 data task2; 
 	set libref1.ccaed171
@@ -78,21 +78,21 @@ data task2_merged;
   merge task2_filtered(in=a) collected_ndc(in=b);
   by NDCNUM;
   if a and b; /* Keep only matching records */
-run;
+run; /*40.68 seconds (real); 40.29 seconds (cpu)*/
 
 /* Calculate mean COPAY by YEAR for medications with relevant NDCNUMs */
 proc summary data=task2_merged nway noprint;
     var COPAY;
     class YEAR;
     output out=summary_mean_copay(drop=_TYPE_ _FREQ_) mean(COPAY)=COPAY2;
-run;
+run; /*0.76 seconds (real); 1.20 seconds (cpu)*/
 
 proc print data=summary_mean_copay;
 run; /*0.02 seconds (real); 0.01 seconds (cpu)*/
 
 /*****************************************/
 
-/*Task 3 - How many pioglitazone dispensing claims with at least a 30-day supply in 2018 and 2019?*/ 
+/*Task 3 - How many pioglitazone dispensing claims with at least a 30-day supply in 2018 and 2019? - Works*/ 
 /* Merge the drug data files (2017-2019) and keep relevant variables for analysis */
 data task3; 
 	set libref2.ccaed181
@@ -149,7 +149,7 @@ proc print data = summary_count_per_year; run;
 /****************************************/
 
 
-/*Task 4: Calculate the summary statistics of the number of hospital admissions per beneficiary (2017-2019).*/
+/*Task 4: Calculate the summary statistics (count and proportion) of the number of hospital admissions per beneficiary (2017-2019). - works, matches output*/
 data task4; 
 	set libref1.ccaei171
 		libref2.ccaei181

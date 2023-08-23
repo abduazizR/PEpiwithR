@@ -1,0 +1,205 @@
+/* Assign library references to the folders */
+libname libref1 '\\pharm-psop\Truven Data\CCAE\2017';
+libname libref2 '\\pharm-psop\Truven Data\CCAE\2018';
+libname libref3 '\\pharm-psop\Truven Data\CCAE\2019';
+libname libref4 '\\pharm-psop\Truven Data';
+libname	libref5 'C:\Users\kahanso2\Documents\Truven';
+
+/*Task 1a*/
+data task1; 
+	set libref1.ccaeo171
+		libref2.ccaeo181
+		libref3.ccaeo195_a;
+	keep SEX YEAR;
+run; 
+
+proc freq data = task1; 
+	table SEX;
+	by YEAR;  
+	run;
+
+/*Task 1b*/
+proc freq data = libref1.ccaeo171; 
+	table SEX; 
+	run;
+
+proc freq data = libref2.ccaeo181; 
+	table SEX; 
+	run;
+
+proc freq data = libref3.ccaeo195_a; 
+	table SEX; 
+	run;
+
+
+/***********************************/
+
+/*Task 2 - Calculate the mean co-payments amount in pharmacy claims (2017-2019) for metformin-containing medications */
+/* Merge the drug data files (2017-2019) and keep relevant variables for analysis */
+data task2; 
+	set libref1.ccaed171
+		libref2.ccaed181
+		libref3.ccaed195_a;
+	keep ENROLID NDCNUM COPAY YEAR;
+run; /*47:53.52 (real); 13:17.98 (cpu)*/
+
+/* Export the dataset to a local CSV file to avoid re-running */
+proc export data=work.task2
+    outfile="C:\Users\kahanso2\Documents\SAS to R\task2.csv"
+    dbms=csv replace;
+run;
+
+/*Generate NDC numbers for metformin*/
+data collected_ndc;
+  set libref4.redbook;
+  where upcase(GENNME) like '%METFORMIN%';
+  NDCNUM_char = put(NDCNUM, 32.); /* Convert NDCNUM to character format */
+  keep NDCNUM_char;
+run; /*No Time Reporting Requirement*/
+
+data collected_ndc;
+  set collected_ndc(rename=(NDCNUM_char=NDCNUM));
+run; /*No Time Reporting Requirement*/
+
+/* Filter out rows with missing ENROLID and missing COPAY */
+data task2_filtered;
+    set task2;
+    where not missing(ENROLID) and not missing(COPAY);
+run;
+
+/* Sort the task2_filtered dataset by NDCNUM */
+proc sort data=task2_filtered;
+  by NDCNUM;
+run; /*2:19.98 (real); 3:23.37 (cpu)*/
+
+/* Merge task2_filtered with collected_ndc to include only relevant NDCNUMs */
+data task2_merged;
+  merge task2_filtered(in=a) collected_ndc(in=b);
+  by NDCNUM;
+  if a and b; /* Keep only matching records */
+run;
+
+/* Calculate mean COPAY by YEAR for medications with relevant NDCNUMs */
+proc summary data=task2_merged nway noprint;
+    var COPAY;
+    class YEAR;
+    output out=summary_mean_copay(drop=_TYPE_ _FREQ_) mean(COPAY)=COPAY2;
+run;
+
+proc print data=summary_mean_copay;
+run; /*0.02 seconds (real); 0.01 seconds (cpu)*/
+
+/*****************************************/
+
+/*Task 3 - How many pioglitazone dispensing claims with at least a 30-day supply in 2018 and 2019?*/ 
+/* Merge the drug data files (2017-2019) and keep relevant variables for analysis */
+data task3; 
+	set libref2.ccaed181
+		libref3.ccaed195_a;
+	keep ENROLID NDCNUM DAYSUPP YEAR;
+run; /*27:48.39 (real); 7:49.71 (cpu)*/
+
+/* Export the dataset to a local CSV file to avoid re-running */
+proc export data=work.task3
+    outfile="C:\Users\kahanso2\Documents\SAS to R\task3.csv"
+    dbms=csv replace;
+run; /*2:13.56 (real); 2:13.29 (cpu)*/
+
+/*Generate NDC numbers for pioglitazone*/
+data collected_ndc;
+  set libref4.redbook;
+  where upcase(GENNME) like 'PIOGLITAZONE HYDROCHLORIDE';
+  NDCNUM_char = put(NDCNUM, 32.); /* Convert NDCNUM to character format */
+  keep NDCNUM_char GENNME;
+run; /*No Time Reporting Requirement - 3.77 seconds (real); 0.78 seconds (cpu)*/
+
+/*Rename to NDCNUM to allow merge*/
+data collected_ndc;
+  set collected_ndc(rename=(NDCNUM_char=NDCNUM));
+run; /*No Time Reporting Requirement - 0.00 seconds*/
+
+proc print data = collected_ndc (obs=300); run;
+/*Sort data for merge*/
+proc sort data=task3;
+  by NDCNUM;
+run; /*1:32.47 (real); 2:14.09 (cpu)*/
+
+/*Inner join datasets to only keep patients who fill pioglitazone*/
+data merged;
+  merge task3(in=a)
+        collected_ndc (in=b);
+  by NDCNUM;
+  if a and b;
+run; /*25.57 seconds (real); 25.61 seconds (cpu)*/
+
+/* Filter and calculate COUNT by YEAR */
+proc sql;
+  create table summary_count_per_year as
+  select YEAR, count(*) as Count
+  from merged
+  where YEAR between 2018 and 2019
+    and not missing(ENROLID) and DAYSUPP >= 30
+  group by YEAR;
+quit; /*0.18 seconds (real); 0.21 seconds (cpu)*/
+
+proc print data = summary_count_per_year; run;
+/****************************************/
+/*Task 4*/
+data task4; 
+	set libref1.ccaei171
+		libref2.ccaei181
+		libref3.ccaei195_a;
+run; /*1:12.70 (real); 11.42 (cpu)*/
+
+proc freq data=task4 noprint;
+  where not missing(ENROLID);
+  tables ENROLID / out=summary_count_enrolid;
+run; /*6.04 seconds (real); 2.20 (cpu) 2761452 observations*/
+
+proc print data = summary_count_enrolid (obs = 10); 
+run;
+
+
+/******************************************************/
+
+/*Task 5 - works; matches output*/
+/*Load Outpatient Datasets*/
+data task5; 
+	set libref1.ccaeo171
+		libref2.ccaeo181
+		libref3.ccaeo195_a;
+	keep ENROLID YEAR REGION DX1 DX2 DX3 DX4;
+run; /*2:28:24.86 (real); 52:32.98 (cpu)*/
+
+data libref5.task5; set task5; run;
+/*Saved data so dont have to go through headache of merging over again - Failed anyway*/
+
+/*Import ICD10 codes*/
+proc import datafile="C:\Users\kahanso2\Desktop\type2_diabetes_icd10_codes.csv"
+            out=icd10_codes
+            dbms=csv
+            replace;
+		getnames = yes;
+run; /*No time reporting required (0.25 seconds)*/
+
+/* Rename the variable */
+data icd10_codes;
+  set icd10_codes(rename=(type2_diabetes_icd10_codes=ICD10));
+run; /*No time reporting required (0.01 seconds)*/
+
+/*ID Individuals with ICD-10 codes for T2DM in DX1 through DX4*/
+proc sql;
+  create table matched_obs as
+  select a.*
+  from task5 as a
+       inner join icd10_codes as b
+       on a.DX1 = b.ICD10 OR a.DX2 = b.ICD10 OR a.DX3 = b.ICD10 OR a.DX4 = b.ICD10;
+quit; /*2:57:51.20 (real); 2:57:49.67 (cpu)*/
+
+proc sort data=matched_obs out=unique_matched_obs nodupkey;
+  by ENROLID REGION;
+run; /*16.26 seconds (real); 25.40 seconds (cpu)*/
+	
+proc freq data = unique_matched_obs; 
+	table region; 
+	run; /*0.67 seconds (real); 0.37 seconds (cpu)*/

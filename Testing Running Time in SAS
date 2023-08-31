@@ -3,34 +3,39 @@ libname libref1 '\\pharm-psop\Truven Data\CCAE\2017';
 libname libref2 '\\pharm-psop\Truven Data\CCAE\2018';
 libname libref3 '\\pharm-psop\Truven Data\CCAE\2019';
 libname libref4 '\\pharm-psop\Truven Data';
-libname	libref5 'C:\Users\kahanso2\Documents\Truven';
+libname	libref5 'Z:\easy-claims-analysis-r-python\sas';
+
+libname libref6 '\\pharm-psop\Truven Data\CCAE\2020';
+libname libref7 '\\pharm-psop\Truven Data\CCAE\2021';
 
 /*Task 1: What are the counts and proportions of males and females in outpatient claims (2017-2019) by year?*/
 /*Task 1a*/
 data task1; 
 	set libref1.ccaeo171
 		libref2.ccaeo181
-		libref3.ccaeo195_a;
-	keep SEX YEAR;
-run; /*2:15:45.82 (real); 38:27.68 (cpu)*/
+		libref3.ccaeo195_a
+		libref6.ccaeo202_a
+		libref7.ccaeo211_a;
+keep SEX YEAR;
+run; 
 
 proc freq data = task1; 
 	table SEX;
 	by YEAR;  
-	run; /*1:10.76 (real); 1:10.89 (cpu)*/
+	run; 
 
 /*Task 1b*/
 proc freq data = libref1.ccaeo171; 
 	table SEX; 
-	run; /*29:36.27 (real); 1:00.03 (cpu)*/
+	run; 
 
 proc freq data = libref2.ccaeo181; 
 	table SEX; 
-	run; /*30:56.37 (real); 1:02.37 (cpu)*/
+	run; 
 
 proc freq data = libref3.ccaeo195_a; 
 	table SEX; 
-	run; /*18:08.41 (real); 34.90 seconds (cpu)*/
+	run; 
 
 
 /***********************************/
@@ -42,11 +47,11 @@ data task2;
 		libref2.ccaed181
 		libref3.ccaed195_a;
 	keep ENROLID NDCNUM COPAY YEAR;
-run; /*47:53.52 (real); 13:17.98 (cpu)*/
+run; 
 
 /* Export the dataset to a local CSV file to avoid re-running */
 proc export data=work.task2
-    outfile="C:\Users\kahanso2\Documents\SAS to R\task2.csv"
+    outfile="Z:\easy-claims-analysis-r-python\sas\task2.csv"
     dbms=csv replace;
 run;
 
@@ -66,29 +71,30 @@ run; /*No Time Reporting Requirement*/
 data task2_filtered;
     set task2;
     where not missing(ENROLID) and not missing(COPAY);
-run;
+run; 
+ */ 
 
 /* Sort the task2_filtered dataset by NDCNUM */
 proc sort data=task2_filtered;
   by NDCNUM;
-run; /*2:19.98 (real); 3:23.37 (cpu)*/
+run; 
 
 /* Merge task2_filtered with collected_ndc to include only relevant NDCNUMs */
 data task2_merged;
   merge task2_filtered(in=a) collected_ndc(in=b);
   by NDCNUM;
   if a and b; /* Keep only matching records */
-run; /*40.68 seconds (real); 40.29 seconds (cpu)*/
+run; 
 
 /* Calculate mean COPAY by YEAR for medications with relevant NDCNUMs */
 proc summary data=task2_merged nway noprint;
     var COPAY;
     class YEAR;
     output out=summary_mean_copay(drop=_TYPE_ _FREQ_) mean(COPAY)=COPAY2;
-run; /*0.76 seconds (real); 1.20 seconds (cpu)*/
+run; 
 
 proc print data=summary_mean_copay;
-run; /*0.02 seconds (real); 0.01 seconds (cpu)*/
+run; 
 
 /*****************************************/
 
@@ -98,13 +104,13 @@ data task3;
 	set libref2.ccaed181
 		libref3.ccaed195_a;
 	keep ENROLID NDCNUM DAYSUPP YEAR;
-run; /*27:48.39 (real); 7:49.71 (cpu)*/
+run; 
 
 /* Export the dataset to a local CSV file to avoid re-running */
 proc export data=work.task3
-    outfile="C:\Users\kahanso2\Documents\SAS to R\task3.csv"
+    outfile="Z:\easy-claims-analysis-r-python\sas\task3.csv"
     dbms=csv replace;
-run; /*2:13.56 (real); 2:13.29 (cpu)*/
+run; 
 
 /*Generate NDC numbers for pioglitazone*/
 data collected_ndc;
@@ -112,7 +118,7 @@ data collected_ndc;
   where upcase(GENNME) like 'PIOGLITAZONE HYDROCHLORIDE';
   NDCNUM_char = put(NDCNUM, 32.); /* Convert NDCNUM to character format */
   keep NDCNUM_char GENNME;
-run; /*No Time Reporting Requirement - 3.77 seconds (real); 0.78 seconds (cpu)*/
+run; 
 
 /*Rename to NDCNUM to allow merge*/
 data collected_ndc;
@@ -123,7 +129,7 @@ proc print data = collected_ndc (obs=300); run;
 /*Sort data for merge*/
 proc sort data=task3;
   by NDCNUM;
-run; /*1:32.47 (real); 2:14.09 (cpu)*/
+run; 
 
 /*Inner join datasets to only keep patients who fill pioglitazone*/
 data merged;
@@ -131,7 +137,7 @@ data merged;
         collected_ndc (in=b);
   by NDCNUM;
   if a and b;
-run; /*25.57 seconds (real); 25.61 seconds (cpu)*/
+run; 
 
 /* Filter and calculate COUNT by YEAR */
 proc sql;
@@ -141,7 +147,7 @@ proc sql;
   where YEAR between 2018 and 2019
     and not missing(ENROLID) and DAYSUPP >= 30
   group by YEAR;
-quit; /*0.18 seconds (real); 0.21 seconds (cpu)*/
+quit; 
 
 proc print data = summary_count_per_year; run;
 
@@ -154,12 +160,12 @@ data task4;
 	set libref1.ccaei171
 		libref2.ccaei181
 		libref3.ccaei195_a;
-run; /*1:12.70 (real); 11.42 (cpu)*/
+run; 
 
 proc freq data=task4 noprint;
   where not missing(ENROLID);
   tables ENROLID / out=summary_count_enrolid;
-run; /*6.04 seconds (real); 2.20 (cpu) 2761452 observations*/
+run; 
 
 /* Sort the summary_count_enrolid dataset by descending count */
 proc sort data=summary_count_enrolid out=summary_count_enrolid_sorted;
@@ -168,7 +174,7 @@ run;
 
 /* Export the summary_count_enrolid dataset to a CSV file */
 proc export data=summary_count_enrolid_sorted
-    outfile="C:\Users\kahanso2\Documents\SAS to R\task4.csv"
+    outfile="Z:\easy-claims-analysis-r-python\sas\task4.csv"
     dbms=csv replace;
 run;
 
@@ -181,37 +187,228 @@ data task5;
 		libref2.ccaeo181
 		libref3.ccaeo195_a;
 	keep ENROLID YEAR REGION DX1 DX2 DX3 DX4;
-run; /*2:28:24.86 (real); 52:32.98 (cpu)*/
+run; 
 
 data libref5.task5; set task5; run;
-/*Saved data so dont have to go through headache of merging over again - Failed anyway*/
 
-/*Import ICD10 codes*/
-proc import datafile="C:\Users\kahanso2\Desktop\type2_diabetes_icd10_codes.csv"
-            out=icd10_codes
-            dbms=csv
-            replace;
-		getnames = yes;
-run; /*No time reporting required (0.25 seconds)*/
+%let icd_list = 'E119'
+'O24111'
+'O24112'
+'O24113'
+'O24119'
+'O2412'
+'O2413'
+'E1100'
+'E1101'
+'E1110'
+'E1111'
+'E1121'
+'E1122'
+'E1129'
+'E11311'
+'E11319'
+'E11321'
+'E113211'
+'E113212'
+'E113213'
+'E113219'
+'E11329'
+'E113291'
+'E113292'
+'E113293'
+'E113299'
+'E11331'
+'E113311'
+'E113312'
+'E113313'
+'E113319'
+'E11339'
+'E113391'
+'E113392'
+'E113393'
+'E113399'
+'E11341'
+'E113411'
+'E113412'
+'E113413'
+'E113419'
+'E11349'
+'E113491'
+'E113492'
+'E113493'
+'E113499'
+'E11351'
+'E113511'
+'E113512'
+'E113513'
+'E113519'
+'E113521'
+'E113522'
+'E113523'
+'E113529'
+'E113531'
+'E113532'
+'E113533'
+'E113539'
+'E113541'
+'E113542'
+'E113543'
+'E113549'
+'E113551'
+'E113552'
+'E113553'
+'E113559'
+'E11359'
+'E113591'
+'E113592'
+'E113593'
+'E113599'
+'E1136'
+'E1137X1'
+'E1137X2'
+'E1137X3'
+'E1137X9'
+'E1139'
+'E1140'
+'E1141'
+'E1142'
+'E1143'
+'E1144'
+'E1149'
+'E1151'
+'E1152'
+'E1159'
+'E11610'
+'E11618'
+'E11620'
+'E11621'
+'E11622'
+'E11628'
+'E11630'
+'E11638'
+'E11641'
+'E11649'
+'E1165'
+'E1169'
+'E118'
+'E1100'
+'E1101'
+'E1110'
+'E1111'
+'E1121'
+'E1122'
+'E1129'
+'E11311'
+'E11319'
+'E11321'
+'E113211'
+'E113212'
+'E113213'
+'E113219'
+'E11329'
+'E113291'
+'E113292'
+'E113293'
+'E113299'
+'E11331'
+'E113311'
+'E113312'
+'E113313'
+'E113319'
+'E11339'
+'E113391'
+'E113392'
+'E113393'
+'E113399'
+'E11341'
+'E113411'
+'E113412'
+'E113413'
+'E113419'
+'E11349'
+'E113491'
+'E113492'
+'E113493'
+'E113499'
+'E11351'
+'E113511'
+'E113512'
+'E113513'
+'E113519'
+'E113521'
+'E113522'
+'E113523'
+'E113529'
+'E113531'
+'E113532'
+'E113533'
+'E113539'
+'E113541'
+'E113542'
+'E113543'
+'E113549'
+'E113551'
+'E113552'
+'E113553'
+'E113559'
+'E11359'
+'E113591'
+'E113592'
+'E113593'
+'E113599'
+'E1136'
+'E1137X1'
+'E1137X2'
+'E1137X3'
+'E1137X9'
+'E1139'
+'E1140'
+'E1141'
+'E1142'
+'E1143'
+'E1144'
+'E1149'
+'E1151'
+'E1152'
+'E1159'
+'E11610'
+'E11618'
+'E11620'
+'E11621'
+'E11622'
+'E11628'
+'E11630'
+'E11638'
+'E11641'
+'E11649'
+'E1165'
+'E1169'
+'E118'
+'E119'
+'O24111'
+'O24112'
+'O24113'
+'O24119'
+'O2412'
+'O2413'
+; /* Replace with your list of ICD-10 codes */
 
-/* Rename the variable */
-data icd10_codes;
-  set icd10_codes(rename=(type2_diabetes_icd10_codes=ICD10));
-run; /*No time reporting required (0.01 seconds)*/
-
-/*ID Individuals with ICD-10 codes for T2DM in DX1 through DX4*/
 proc sql;
-  create table matched_obs as
-  select a.*
-  from task5 as a
-       inner join icd10_codes as b
-       on a.DX1 = b.ICD10 OR a.DX2 = b.ICD10 OR a.DX3 = b.ICD10 OR a.DX4 = b.ICD10;
-quit; /*2:57:51.20 (real); 2:57:49.67 (cpu)*/
+    create table matched_obs as
+    select *
+    from task5
+    where DX1 in (&icd_list.)
+       or DX2 in (&icd_list.)
+       or DX3 in (&icd_list.)
+       or DX4 in (&icd_list.);
+quit;
+
+
 
 proc sort data=matched_obs out=unique_matched_obs nodupkey;
   by ENROLID REGION;
-run; /*16.26 seconds (real); 25.40 seconds (cpu)*/
+run; 
 	
 proc freq data = unique_matched_obs; 
 	table region; 
-	run; /*0.67 seconds (real); 0.37 seconds (cpu)*/
+	run; 

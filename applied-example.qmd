@@ -1,10 +1,9 @@
 ---
-title: "Applied example public version"
+title: "Applied example SGLT2i vs GLP-1RAs and the risk of bladder cancer"
 format: html
 editor: visual
 author: Abdullah Abdelaziz
 ---
-
 
 ```{r}
 #|label: packages

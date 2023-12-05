@@ -21,8 +21,8 @@ to_parquet <- function(n_rows, n_chunks, original_data_dir, output_dir){
     }
   } else if (tolower(tools::file_ext(original_data_dir)) %in% c("CSV", "tsv", "txt")) {
     col_names <- names(rio::import(original_data_dir),
-        nrows = i,
-        skip = z)
+        nrows = 1,
+        skip = 0)
     z = 0
     m = 1
     for (i in chunks) {

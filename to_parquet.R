@@ -4,7 +4,6 @@ to_parquet <- function(n_rows, n_chunks, original_data_dir, output_dir){
   all_parts_except_last <- n_rows %/% (n_chunks-1)
   last_part <- n_rows %% (n_chunks-1)
   chunks <- c(rep(all_parts_except_last, n_chunks-1), last_part)
-  col_names <- names(rio::import(original_data_dir))
 
   pb <- progress::progress_bar$new(format = "[:bar] :current/:total (:percent) eta: :eta", total = n_chunks)
   pb$tick(0)
@@ -20,7 +19,10 @@ to_parquet <- function(n_rows, n_chunks, original_data_dir, output_dir){
       pb$tick(1)
       # print(glue::glue("Z is {z} and I is {i}"))
     }
-  } else if (tolower(tools::file_ext(original_data_dir)) %in% c("csv", "tsv", "txt")) {
+  } else if (tolower(tools::file_ext(original_data_dir)) %in% c("CSV", "tsv", "txt")) {
+    col_names <- names(rio::import(original_data_dir),
+        nrows = i,
+        skip = z)
     z = 0
     m = 1
     for (i in chunks) {

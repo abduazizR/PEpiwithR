@@ -19,8 +19,6 @@ library(broom)
 library(cobalt)
 ```
 
-I need to think about the problem of exposing the directories. I think I will share the final html with fake chunks for calling the data.
-
 ```{r}
 #|label: datasets
 ccaeo <- open_dataset("C:\\truven2\\ccae\\o")
